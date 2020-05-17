@@ -1,6 +1,8 @@
 ---
 title: "data-cleaning, preparing models and running models"
 output: html_document
+author: Sophia Marthine Kleist Karlson
+date: May 17, 2020
 ---
 
 
