@@ -461,7 +461,7 @@ write.csv(data, "data_2.csv") # Save as data_2
 df_meta <- read.csv("Meta-measures.csv")
 df_meta$X1 <- NULL
 
-df_meta$crit_Susceptibility <- sus_crit$sus_crit
+df_meta$crit_Susceptibility <- sus_crit_1$sus_crit_1
 write.csv(df_meta, "Meta-measures.csv")
 ```
 
@@ -635,7 +635,9 @@ mod_2.1 <- brm(
   data = df_2,
   chains = 2,
   cores = 2,
-  sample_prior = T
+  sample_prior = T,
+  iter = 4000,
+  control = list(adapt_delta=0.99, max_treedepth=20)
 )
 
 # Posterior predictive check
@@ -699,7 +701,9 @@ mod_3.0 <- brm(
   data = df_3,
   chains = 2,
   cores = 2,
-  sample_prior = "only"
+  sample_prior = "only",
+  iter = 4000,
+  control = list(adapt_delta=0.99, max_treedepth=20)
 )
 
 # Prior predictive check
@@ -789,7 +793,9 @@ mod_4.1 <- brm(
   data = df_4,
   chains = 2,
   cores = 2,
-  sample_prior = T
+  sample_prior = T,
+  iter = 4000,
+  control = list(adapt_delta=0.99, max_treedepth=20)
 )
 
 # Posterior predictive check
@@ -866,7 +872,9 @@ mod_5_1 <- brm(
   data = df_5,
   chains = 2,
   cores = 2,
-  sample_prior = T
+  sample_prior = T,
+  iter = 4000,
+  control = list(adapt_delta=0.99, max_treedepth=20)
 )
 
 # Posterior predictive check
@@ -946,7 +954,9 @@ mod_6_1 <- brm(
   data = df_meta,
   chains = 2,
   cores = 2,
-  sample_prior = T
+  sample_prior = T,
+  iter = 4000,
+  control = list(adapt_delta=0.99, max_treedepth=20)
 )
 
 # Posterior predictive check
