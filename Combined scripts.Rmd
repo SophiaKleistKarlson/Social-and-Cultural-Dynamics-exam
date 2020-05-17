@@ -67,7 +67,7 @@ Preparing variables (resolution, benefit, resolution, gender)
 setwd("~/Karsten projekt/exam/data")
 
 library(pacman)
-p_load(tidyverse)
+p_load(tidyversE)
 
 
 data <- read_csv("cleaned data.csv") # We use the cleaned data
@@ -89,19 +89,21 @@ correct_conf <- data %>% filter(Accuracy_1=="1") %>% group_by(Subject_ID) %>% se
 incorrect_conf <- as.data.frame(incorrect_conf)
 correct_conf <- as.data.frame(correct_conf)
 
-
+# Making an empty list to fill in the resolution scores
 Resolution <- c()
 
+# Loop for finding resolution for each participant
 for (i in 1:39) {
   
-  inc_ID <- incorrect_conf %>% filter(Subject_ID == i) 
-  cor_ID <- correct_conf %>% filter(Subject_ID == i)
+  inc_ID <- incorrect_conf %>% filter(Subject_ID == i) # Take the absolute confidence for incorrect answers for participant i
+  cor_ID <- correct_conf %>% filter(Subject_ID == i) # Take the absolute confidence for correct answers for participant i
   
-  Res <- mean(cor_ID$abs_conf_1) - mean(inc_ID$abs_conf_1)
-  Resolution[i] <- paste(Res, collapse=NULL)
+  Res <- mean(cor_ID$abs_conf_1) - mean(inc_ID$abs_conf_1) # resolution = mean of confidence for correct minus ditto of incorrect
+  Resolution[i] <- paste(Res, collapse=NULL) # Pate resolution score into the list
 }
 
-print(Resolution)
+# Print resolution scores for all 39 participants
+print(Resolution) 
 
 # Make Resolutions into numeric instead of character
 class(Resolution)
@@ -134,39 +136,37 @@ mean(data$Benefit)
 
 
 Calibration
-Described by Karsten Olsen as following (in Danish):
-
-"Vi gør følgende for hver participant:
--Vi har 5 confidence levels
--Vi udregner average choice accuracy for hvert confidence level - dvs mean(accuracy(index)) hvor index indikerer de trials deltageren brugte et givet confidence level
--Vi udregner forskellen mellem confidence level og average choice accuracy for hvert confidence level - fx .6-.52= .08, .7 - .72 = -.02 osv.
--Vi summerer disse forskelle på tværs af confidence levels"
-
+Calibration = sum of differences between confidence level (ranging 0.6 to 1.0) and mean accuracy (ranging 0.0 to 1.0) for each step on the confidence scale.
 ```{r}
 # Selecting necessary variables
 cal_df <- data %>% group_by(Subject_ID) %>% select(abs_conf_1, Accuracy_1)
 
+# Make empty list for calibration scores
 Calibration <- c()
 
+
+# Loop for finding calibration for each participant
 for (i in 1:39){
-  cal_0.6 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.6) 
-  cal_0.7 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.7) 
-  cal_0.8 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.8) 
-  cal_0.9 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.9)
-  cal_1.0 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 1.0) 
+  cal_0.6 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.6) # make a df when absolute confidence for subject i is 0.6 
+  cal_0.7 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.7) # make a df when absolute confidence for subject i is 0.7
+  cal_0.8 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.8) # make a df when absolute confidence for subject i is 0.8 
+  cal_0.9 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 0.9) # make a df when absolute confidence for subject i is 0.9 
+  cal_1.0 <- cal_df %>% filter(Subject_ID == i & abs_conf_1 == 1.0) # make a df when absolute confidence for subject i is 1.0 
   
-  mean_0.6 <- mean(cal_0.6$Accuracy_1)
+  # find mean accuracy_1 for each level of the confidence scale
+  mean_0.6 <- mean(cal_0.6$Accuracy_1) 
   mean_0.7 <- mean(cal_0.7$Accuracy_1)
   mean_0.8 <- mean(cal_0.8$Accuracy_1)
   mean_0.9 <- mean(cal_0.9$Accuracy_1)
   mean_1.0 <- mean(cal_1.0$Accuracy_1)
   
-  mean_acc <- c(mean_0.6, mean_0.7, mean_0.8, mean_0.9, mean_1.0)
-  conf <- c(0.6, 0.7, 0.8, 0.9, 1.0)
-  Calibrations <- sum(conf - mean_acc, na.rm = T)
-  Calibration[i] <- paste(Calibrations, collapse=NULL)
+  mean_acc <- c(mean_0.6, mean_0.7, mean_0.8, mean_0.9, mean_1.0) #list of mean accuracies for each level of the confidence scale
+  conf <- c(0.6, 0.7, 0.8, 0.9, 1.0) # list of confidence levels
+  Calibrations <- sum(conf - mean_acc, na.rm = T) # calculate calibration: sum of differences between confidence level and mean accuracy for that confidence level
+  Calibration[i] <- paste(Calibrations, collapse=NULL) # paste into the calibration list
 }
 
+# Print calibration scores for all 39 participants
 print(Calibration)
 
 #Making a df with one measure of calibration per participant
@@ -315,6 +315,7 @@ df_part <- df_sus %>% group_by(Subject_ID) %>% summarize(conf_2_mean = mean(Conf
 sd(df_part$conf_2_mean) #get the standard deviation of the mean confidence_2 for each participant
 
 
+# Define priors
 prior_sus_mod <- c(
   prior(normal(0.55, .23),     class = b), #mean and sd of confidence 2
   prior(lkj(1),                class = cor),
@@ -324,7 +325,7 @@ prior_sus_mod <- c(
 )
 
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 skep_sus_mod0 <- brm(
   formula = sus_mod, 
   prior = prior_sus_mod,
@@ -336,7 +337,7 @@ skep_sus_mod0 <- brm(
 
 
 # Prior predictive check
-pp_check(skep_sus_mod0, nsamples = 100) # 
+pp_check(skep_sus_mod0, nsamples = 1000) # 
 
 
 # The actual model:
@@ -352,8 +353,7 @@ skep_sus_mod1 <- brm(
 )
 
 # Posterior predictive check
-pp_check(skep_sus_mod1, nsamples = 100)
-
+pp_check(skep_sus_mod1, nsamples = 1000)
 
 
 # Model summary
@@ -379,6 +379,31 @@ mcmc_rank_overlay(skep_sus_mod1,
 mcmc_rank_overlay(skep_sus_mod1, 
                   pars = c("sd_Subject_ID__Confidence_1:adv_Confidence", "sd_Subject_ID__Advisor2:adv_Confidence")) + 
   theme_classic()
+
+
+
+# Check model learning for betas and sd's
+plot(hypothesis(skep_sus_mod1,"Intercept > 0"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1 > 0"))
+plot(hypothesis(skep_sus_mod1,"Accuracy_11 > 0"))
+plot(hypothesis(skep_sus_mod1,"Advisor2 > 0"))
+plot(hypothesis(skep_sus_mod1,"adv_Confidence > 0"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1:Accuracy_11 > 0"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1:adv_Confidence > 0"))
+plot(hypothesis(skep_sus_mod1,"Advisor2:adv_Confidence > 0"))
+
+plot(hypothesis(skep_sus_mod1,"Intercept > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1 > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Accuracy_11 > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Advisor2 > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"adv_Confidence > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1:Accuracy_11 > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Confidence_1:adv_Confidence > 0", class="sd", group="Subject_ID"))
+plot(hypothesis(skep_sus_mod1,"Advisor2:adv_Confidence > 0", class="sd", group="Subject_ID"))
+
+# Plot effects
+conditional_effects(skep_sus_mod1)
+#plot(  , class="sd", group="Subject_ID", spaghetti = T, nsamples = 50), points=T)
 ```
 
 
@@ -439,6 +464,15 @@ write.csv(df_meta, "Meta-measures.csv")
 ```
 
 
+plot susceptibility
+```{r}
+plot_sus <- ggplot(sus_crit_1, aes(Subject_ID, sus_crit_1)) +
+  geom_point() +
+  labs(y= "Susceptibility", x = "Participant")
+plot_sus
+```
+
+
 
 ### Wipe environment###
 
@@ -494,11 +528,11 @@ sd(data$Benefit)
 
 # Define priors
 prior_mod_1 <- c(
-  prior(normal(7.21, 31.31),  class = b), #mean and sd of benefit
+  prior(normal(7.21, 31.31),   class = b), #mean and sd of benefit
   prior(normal(31.31, 15.66),  class = sigma) #mean: sd of benefit. sigma: sd of benefit/2
 )
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_1.0 <- brm(
   formula = mod_1, 
   prior = prior_mod_1,
@@ -573,12 +607,12 @@ sd(df_2$crit_Susceptibility)
 
 # Define priors
 prior_mod_2 <- c(
-  prior(normal(0, .1),  class = b), #mean and sd of sus
+  prior(normal(0, .1),     class = b), #mean and sd of sus
   prior(normal(.1, .05),   class = sigma) #mean: sd of sus. sigma: sd of sus/2
 )
 
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_2.0 <- brm(
   formula = mod_2, 
   prior = prior_mod_2,
@@ -656,7 +690,7 @@ prior_mod_3 <- c(
 )
 
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_3.0 <- brm(
   formula = mod_3, 
   prior = prior_mod_3,
@@ -732,7 +766,7 @@ prior_mod_4 <- c(
 )
 
 
-# Run the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_4.0 <- brm(
   formula = mod_4, 
   prior = prior_mod_4,
@@ -808,7 +842,7 @@ prior_mod_5 <- c(
   prior(normal(31.31, 15.66),    class = sigma) #mean: sd of benefit. sigma: sd of benefit/2
 )
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_5_0 <- brm(
   formula = mod_5, 
   prior = prior_mod_5,
@@ -888,7 +922,7 @@ prior_mod_6 <- c(
 )
 
 
-# Running the model to check priors
+# Fitting the model samplig only from priors, in order to check the quality of the priors
 mod_6_0 <- brm(
   formula = mod_6, 
   prior = prior_mod_6,
